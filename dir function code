@@ -1,9 +1,14 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include <filesystem>
 #include <string>
 #include <windows.h>
 #include <AclAPI.h>
 #include <vector> // For memory management using std::vector
+#include <chrono>
+#include <ctime>
+#include <iomanip> // For formatting time output
+#include <sstream> // For std::wostringstream
 
 namespace fs = std::filesystem;
 
@@ -48,13 +53,51 @@ std::wstring getOwner(const fs::path& filePath) {
     return std::wstring(domain) + L"\\" + std::wstring(name);
 }
 
+// Function to format time into a readable string
+std::wstring formatTime(const fs::file_time_type& ftime) {
+    // Convert file_time_type to system_clock::time_point
+    auto system_time = std::chrono::time_point_cast<std::chrono::system_clock::duration>(ftime - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
+
+    // Convert the system_clock time_point to std::time_t
+    std::time_t cftime = std::chrono::system_clock::to_time_t(system_time);
+
+    // Format the time as a string
+    std::wostringstream oss;
+    std::tm timeStruct;
+
+    std::tm* timePtr = std::localtime(&cftime); // This is the standard C++ function
+    if (timePtr != nullptr) {
+        timeStruct = *timePtr; // If successful, copy to timeStruct
+        oss << std::put_time(&timeStruct, L"%Y-%m-%d %H:%M:%S");
+    }
+    else {
+        oss << L"Invalid Time";
+    }
+
+    return oss.str();
+}
+
 // Function to list files and directories in a given directory (dir /a behavior)
 void listDir(const fs::path& dirPath, bool showOwner = false) {
     try {
         if (fs::exists(dirPath) && fs::is_directory(dirPath)) {
             std::wcout << L"Listing files and directories in: " << dirPath << std::endl;
             for (const auto& entry : fs::directory_iterator(dirPath)) {
-                std::wcout << entry.path();
+                std::wcout << L"Path: " << entry.path();
+
+                // Check if it is a directory or file
+                if (fs::is_directory(entry)) {
+                    std::wcout << L"  [Directory]";
+                }
+                else if (fs::is_regular_file(entry)) {
+                    std::wcout << L"  [File]";
+                    std::wcout << L"  Size: " << fs::file_size(entry) << L" bytes";
+                }
+
+                // Show the creation time
+                auto ftime = fs::last_write_time(entry);
+                std::wcout << L"  Creation Time: " << formatTime(ftime);
+
                 if (showOwner) {
                     std::wcout << L"  Owner: " << getOwner(entry.path());
                 }
@@ -76,7 +119,21 @@ void listDirRecursively(const fs::path& dirPath, bool showOwner = false) {
         if (fs::exists(dirPath) && fs::is_directory(dirPath)) {
             std::wcout << L"Listing files and directories recursively in: " << dirPath << std::endl;
             for (const auto& entry : fs::recursive_directory_iterator(dirPath)) {
-                std::wcout << entry.path();
+                std::wcout << L"Path: " << entry.path();
+
+                // Check if it is a directory or file
+                if (fs::is_directory(entry)) {
+                    std::wcout << L"  [Directory]";
+                }
+                else if (fs::is_regular_file(entry)) {
+                    std::wcout << L"  [File]";
+                    std::wcout << L"  Size: " << fs::file_size(entry) << L" bytes";
+                }
+
+                // Show the creation time
+                auto ftime = fs::last_write_time(entry);
+                std::wcout << L"  Creation Time: " << formatTime(ftime);
+
                 if (showOwner) {
                     std::wcout << L"  Owner: " << getOwner(entry.path());
                 }
@@ -140,4 +197,3 @@ int main() {
     }
     return 0;
 }
- 
