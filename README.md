@@ -1,145 +1,69 @@
 # Dir-functions-in-c++
 
-#include <iostream>
-#include <filesystem>
-#include <string>
-#include <windows.h>
-#include <AclAPI.h>
-#include <vector> // For memory management using std::vector
+Directory Listing Tool with File Ownership (C++)
+This tool allows you to list files and directories in a specified directory on a Windows system. It provides functionality similar to the dir command with additional features, such as listing files recursively and displaying file ownership information.
 
-namespace fs = std::filesystem;
+Features
+List files and directories: Similar to the dir /a command.
 
-// Function to get the owner of a file or directory (Windows only)
-std::wstring getOwner(const fs::path& filePath) {
-    DWORD dwRes;
-    PSECURITY_DESCRIPTOR pSD = NULL;
-    PSID pOwnerSid = NULL;
-    BOOL bOwnerDefaulted = FALSE;
+List files and directories recursively: Like dir /s.
 
-    // Get the security descriptor for the file or directory
-    dwRes = GetFileSecurity(filePath.c_str(), OWNER_SECURITY_INFORMATION, NULL, 0, &dwRes);
-    if (dwRes == 0) {
-        return L"Error retrieving owner";
-    }
+Show file owner: Displays the file owner similar to dir /q.
 
-    // Use std::vector for dynamic memory allocation
-    std::vector<BYTE> buffer(dwRes);
-    pSD = reinterpret_cast<PSECURITY_DESCRIPTOR>(buffer.data());
+Prerequisites
+A Windows operating system (uses Windows-specific APIs for file ownership).
 
-    // Get the actual security descriptor
-    if (!GetFileSecurity(filePath.c_str(), OWNER_SECURITY_INFORMATION, pSD, dwRes, &dwRes)) {
-        return L"Error retrieving owner";
-    }
+A C++17-compatible compiler (such as Microsoft Visual Studio, MinGW, etc.).
 
-    // Get the owner SID
-    if (!GetSecurityDescriptorOwner(pSD, &pOwnerSid, &bOwnerDefaulted)) {
-        return L"Error retrieving owner SID";
-    }
+C++17 or later is required for std::filesystem.
 
-    // Convert SID to a readable string (user-friendly name)
-    wchar_t name[256];
-    DWORD size = sizeof(name) / sizeof(name[0]);
-    wchar_t domain[256];
-    DWORD domainSize = sizeof(domain) / sizeof(domain[0]);
-    SID_NAME_USE sidType;
+How to Compile
+Using Microsoft Visual Studio:
+Create a new C++ Console Application:
 
-    if (!LookupAccountSidW(NULL, pOwnerSid, name, &size, domain, &domainSize, &sidType)) {
-        return L"Error looking up account name";
-    }
+Open Microsoft Visual Studio.
 
-    return std::wstring(domain) + L"\\" + std::wstring(name);
-}
+Create a new C++ Console Application project.
 
-// Function to list files and directories in a given directory (dir /a behavior)
-void listDir(const fs::path& dirPath, bool showOwner = false) {
-    try {
-        if (fs::exists(dirPath) && fs::is_directory(dirPath)) {
-            std::wcout << L"Listing files and directories in: " << dirPath << std::endl;
-            for (const auto& entry : fs::directory_iterator(dirPath)) {
-                std::wcout << entry.path();
-                if (showOwner) {
-                    std::wcout << L"  Owner: " << getOwner(entry.path());
-                }
-                std::wcout << std::endl;
-            }
-        }
-        else {
-            std::wcerr << L"The specified path is not a valid directory." << std::endl;
-        }
-    }
-    catch (const fs::filesystem_error& e) {
-        std::wcerr << L"Error: " << e.what() << std::endl;
-    }
-}
+Copy the code into your main source file (e.g., main.cpp).
 
-// Function to list files and directories recursively (dir /s behavior)
-void listDirRecursively(const fs::path& dirPath, bool showOwner = false) {
-    try {
-        if (fs::exists(dirPath) && fs::is_directory(dirPath)) {
-            std::wcout << L"Listing files and directories recursively in: " << dirPath << std::endl;
-            for (const auto& entry : fs::recursive_directory_iterator(dirPath)) {
-                std::wcout << entry.path();
-                if (showOwner) {
-                    std::wcout << L"  Owner: " << getOwner(entry.path());
-                }
-                std::wcout << std::endl;
-            }
-        }
-        else {
-            std::wcerr << L"The specified path is not a valid directory." << std::endl;
-        }
-    }
-    catch (const fs::filesystem_error& e) {
-        std::wcerr << L"Error: " << e.what() << std::endl;
-    }
-}
+Set C++17 or later:
 
-// Main function to execute the user-selected option
-int main() {
-    std::wstring path;
-    std::wstring option;
-    bool continueLoop = true;
+Right-click on your project in the Solution Explorer.
 
-    while (continueLoop) {
+Select Properties.
 
-        std::wcout << L"Enter the directory path (or 'exit' to quit): ";
-        std::getline(std::wcin, path);
+Under Configuration Properties, go to C/C++ > Language.
 
-        // Check if the user wants to exit
-        if (path == L"exit") {
-            std::wcout << L"Exiting program." << std::endl;
-            break;
-        }
+Set C++ Language Standard to ISO C++17 or later.
 
-        if (path.empty()) {
-            std::wcerr << L"Error: Directory path cannot be empty." << std::endl;
-            continue;
-        }
+Build and run the project:
 
-        fs::path dirPath(path);
-        if (!fs::exists(dirPath) || !fs::is_directory(dirPath)) {
-            std::wcerr << L"Error: The provided path is not a valid directory." << std::endl;
-            continue;
-        }
+Press Ctrl + F5 to build and run.
 
-        // Prompt the user for option selection (/a, /s, or /q)
-        std::wcout << L"Enter option (/a for list files, /s for list files recursively, /q for list files with owner): ";
-        std::getline(std::wcin, option);
+Using MinGW or other GCC-compatible compilers:
+Save the code in a file (e.g., directory_listing.cpp).
 
-        // Perform action based on the option selected
-        if (option == L"/a") {
-            listDir(dirPath);  // List files and directories (non-recursive)
-        }
-        else if (option == L"/s") {
-            listDirRecursively(dirPath);  // List files and directories recursively
-        }
-        else if (option == L"/q") {
-            listDir(dirPath, true);  // List files with owner information
-        }
-        else {
-            std::wcerr << L"Invalid option. Please enter either '/a', '/s', or '/q'." << std::endl;
-        }
-    }
-    return 0;
-}
- 
+Open Command Prompt (or terminal) and navigate to the folder where the file is saved.
+
+Compile the code using the following command:
+
+
+g++ -std=c++17 directory_listing.cpp -o directory_listing
+Run the compiled program:
+
+
+directory_listing.exe
+Usage
+When you run the program, it will prompt you for a directory path, and then you can choose how you want to list the files.
+
+Command Options:
+Enter directory path: The program will ask for a valid directory path. If the path is invalid, an error will be shown.
+
+Enter option:
+
+/a: List files and directories (non-recursive).
+
+/s: List files and directories recursively.
+
+/q: List files and directories with owner information.
