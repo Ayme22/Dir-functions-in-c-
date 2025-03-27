@@ -67,3 +67,20 @@ Enter option:
 /s: List files and directories recursively.
 
 /q: List files and directories with owner information.
+
+Special Notes:
+The program uses Windows-specific APIs like GetFileSecurity and LookupAccountSidW to retrieve file owner information, which means it will only work on Windows systems.
+
+Ensure the directory path is valid and accessible to avoid errors.
+
+When the owner information is requested (/q option), it may take a bit longer to retrieve and display, especially for directories with many files.
+
+Troubleshooting
+Program does not compile: Ensure that you're using a C++17 or later compiler, as std::filesystem is required for the program.
+
+Unable to get file owner: Make sure the program is run with appropriate permissions, as retrieving ownership may require administrator rights.
+
+The specified path is not a valid directory: Double-check that the entered path exists and is a directory, not a file.
+
+License
+This tool is provided as-is, under the MIT License.
