@@ -1,0 +1,90 @@
+#include <iostream>
+#include <windows.h>  // For Windows-specific SetCurrentDirectory function
+#include <string>
+#include <filesystem>
+
+namespace fs = std::filesystem;
+
+void changeDirectory(const std::wstring& dirPath) {
+    if (SetCurrentDirectoryW(dirPath.c_str())) {
+        std::wcout << L"Changed to directory: " << dirPath << std::endl;
+    }
+    else {
+        std::wcerr << L"Error: Unable to change directory to " << dirPath << std::endl;
+    }
+}
+
+void moveBackOneDirectory() {
+    fs::path currentPath = fs::current_path();
+    fs::path backPath = currentPath.parent_path();
+    changeDirectory(backPath.wstring());
+}
+
+void displayCurrentDirectory() {
+    fs::path currentPath = fs::current_path();
+    std::wcout << L"Current directory: " << currentPath << std::endl;
+}
+
+bool changeToRelativeDirectory(const std::wstring& dirName) {
+    fs::path currentPath = fs::current_path();
+    fs::path targetDir = currentPath / dirName;
+
+    // Check if the directory exists
+    if (fs::exists(targetDir) && fs::is_directory(targetDir)) {
+        changeDirectory(targetDir.wstring());
+        return true;
+    }
+    else {
+        std::wcerr << L"Error: Directory '" << dirName << L"' does not exist." << std::endl;
+        return false;
+    }
+}
+
+bool changeToAbsoluteDirectory(const std::wstring& dirPath) {
+    // Check if the directory exists
+    if (fs::exists(dirPath) && fs::is_directory(dirPath)) {
+        changeDirectory(dirPath);
+        return true;
+    }
+    else {
+        std::wcerr << L"Error: Directory '" << dirPath << L"' does not exist." << std::endl;
+        return false;
+    }
+}
+
+int main() {
+    std::wstring option;
+    bool running = true;
+
+    while (running) {
+        // Display the current directory
+        displayCurrentDirectory();
+
+        std::wcout << L"Enter an option (cd <path>, next <directory>, .. for back, quit to exit): ";
+        std::getline(std::wcin, option);
+
+        if (option == L"quit") {
+            running = false;
+        }
+        else if (option == L"..") {
+            moveBackOneDirectory();  // Move back one directory
+        }
+        else if (option.substr(0, 2) == L"cd") {
+            std::wstring dirPath = option.substr(3);  // Remove the "cd " part
+
+            // Attempt to change to either relative or absolute directory
+            changeToAbsoluteDirectory(dirPath);
+        }
+        else if (option.substr(0, 4) == L"next") {
+            std::wstring dirName = option.substr(5);  // Remove the "next " part
+
+            // Attempt to change to a subdirectory (relative)
+            changeToRelativeDirectory(dirName);
+        }
+        else {
+            std::wcerr << L"Invalid option." << std::endl;
+        }
+    }
+
+    return 0;
+}
